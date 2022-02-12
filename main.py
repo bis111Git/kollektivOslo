@@ -15,7 +15,7 @@ import plotly.express as px
 st.set_page_config(layout = "wide")
 
 #@st.experimental_memo(suppress_st_warning=True) #Funker ikke
-@st.cache #Denne gjør at vi bare henter data når nettsiden lastes inn første gang, for å slippe å plage enTur med masse forespørsler
+@st.cache(ttl=120) #Denne gjør at vi bare henter data når nettsiden lastes inn første gang, for å slippe å plage enTur med masse forespørsler
 def hent_data():
     print("Hentet data")
     query = """
@@ -66,7 +66,7 @@ def hent_data():
     return df
 
 #@st.experimental_memo(suppress_st_warning=True)
-@st.cache
+@st.cache(ttl=120)
 def lager_linjedata(df):
 
     forsinkelser = []
@@ -109,7 +109,7 @@ henter_tid(df)
 
 #page = st.sidebar.selectbox('Velg type',['Trikker','Busser','Ferger'])
 
-st.title("Forsinkelser i Oslo")
+st.title("Forsinkelser i Oslo.")
 
 alle_linjer = set(df_linjer['Linje'])
 alle_linjer_liste = list(alle_linjer)
