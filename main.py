@@ -10,6 +10,8 @@ import json
 import pandas as pd
 import streamlit as st
 import plotly.express as px
+import pydeck as pdk
+import numpy as np
 
 
 st.set_page_config(layout = "wide")
@@ -109,7 +111,7 @@ henter_tid(df)
 
 #page = st.sidebar.selectbox('Velg type',['Trikker','Busser','Ferger'])
 
-st.title("Forsinkelser i Oslo.")
+st.title("Kollektivtrafikken i Oslo")
 
 alle_linjer = set(df_linjer['Linje'])
 alle_linjer_liste = list(alle_linjer)
@@ -117,23 +119,26 @@ alle_linjer_liste.sort()
 alle_linjer_liste.insert(0,'Alle linjer')
 
 
-linje_valg = st.selectbox("Velg linje",alle_linjer_liste)
+
 
 #andel_forsinket = str(round(100*antall_forsinket/len(df),2)) + '%'
 #st.metric(label="Andel forsinket", value=andel_forsinket)
 
 col1, col2 = st.columns(2)
 
+linje_valg = st.sidebar.selectbox("Velg linje",alle_linjer_liste)
+
 if linje_valg == "Alle linjer":
-    fig = px.bar(df_linjer, x='Linje', y='gjens_forsinkelse',color_discrete_sequence=['indianred'],
+    fig = px.bar(df_linjer, x='Linje', y='gjens_forsinkelse',color='gjens_forsinkelse',color_continuous_scale=["green", "red"],
                  labels={'gjens_forsinkelse':'Sekunder'},title="Gjennomsnittlig forsinkelse på buss og trikkelinjer i Oslo akkurat nå")
 else:
     #Tegner kjøretøy på x-aksen og forsinkelse på y.
     df_linje_valg = df[df['linje'] == linje_valg]
-    fig = px.bar(df_linje_valg, x=[i for i in range(len(df_linje_valg))], y='delay',color_discrete_sequence=['indianred'],
+    fig = px.bar(df_linje_valg, x=[i for i in range(len(df_linje_valg))], y='delay',color='delay',color_continuous_scale=["green", "red"],
                  labels={'x':'Kjøretøy' , 'delay':'Sekunder'},title="Forsinkelser på linje " + linje_valg)
 
-
+#px.colors.qualitative.swatches()
+fig.update(layout_coloraxis_showscale=False)
 col1.plotly_chart(fig, use_container_width=True)
 
 
@@ -145,10 +150,44 @@ df_pos = df
 if linje_valg != "Alle linjer":
     df_pos = df_pos[df_pos['linje'] == linje_valg]
     
-df_pos = df_pos.drop(['linje','sist_oppdatert','delay','er_forsinket'],axis=1)
+df_pos = df_pos.drop(['linje','sist_oppdatert','er_forsinket'],axis=1)
 df_pos = df_pos[df_pos['lat']!=0]
 
-col2.map(df_pos,zoom=10)
+#col2.map(df_pos,zoom=10)
+
+
+
+
+
+
+col2.pydeck_chart(pdk.Deck(
+     map_style='mapbox://styles/mapbox/light-v9',
+     initial_view_state=pdk.ViewState(
+         latitude=59.91,
+         longitude=10.76,
+         zoom=10,
+         pitch=0,
+     ),
+     layers=[
+         #pdk.Layer(
+         #   'HexagonLayer',
+         #   data=df_pos,
+         #   get_position='[lon, lat]',
+         #   radius=200,
+         #   elevation_scale=4,
+         #   elevation_range=[0, 1000],
+         #   pickable=True,
+         #   extruded=True,
+         #),
+         pdk.Layer(
+             'ScatterplotLayer',
+             data=df_pos,
+             get_position='[lon, lat]',
+             get_color='[delay, 255-delay, 0, 200]',
+             get_radius=100 ,
+         ),
+     ],
+ ))
 
 
 
